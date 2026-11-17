@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { openDb, isDbAvailable } from '../src/db.js';
+import { openDb, openMemoryDb, isDbAvailable } from '../src/db.js';
 
 const NOW = 1_700_000_000_000;
 const words = [
@@ -65,4 +65,17 @@ test('isDbAvailable is false when indexedDB is undefined', async () => {
     globalThis.indexedDB = saved;
   }
   assert.equal(await isDbAvailable(), true);
+});
+
+test('memory db supports the same operations without indexedDB', async () => {
+  const db = openMemoryDb();
+  await db.seedIfEmpty(words, NOW);
+  await db.seedIfEmpty(words, NOW);
+  const [card] = await db.getAllCards();
+  await db.putCard({ ...card, state: 'review' });
+  assert.equal((await db.getAllCards()).find((c) => c.id === card.id).state, 'review');
+  await db.deleteCard('table');
+  assert.equal((await db.getAllCards()).length, 1);
+  await db.setMeta('k', 1);
+  assert.equal(await db.getMeta('k'), 1);
 });

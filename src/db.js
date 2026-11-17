@@ -61,3 +61,21 @@ export async function isDbAvailable() {
     return false;
   }
 }
+
+// Fallback used when IndexedDB is unavailable: same interface, progress lives only in this session.
+export function openMemoryDb() {
+  const cards = new Map();
+  const meta = new Map();
+  return {
+    close() {},
+    async seedIfEmpty(words, now) {
+      if (cards.size > 0) return;
+      for (const w of words) cards.set(w.id, { ...w, ...newCardState(now) });
+    },
+    getAllCards: async () => [...cards.values()],
+    putCard: async (card) => void cards.set(card.id, card),
+    deleteCard: async (id) => void cards.delete(id),
+    getMeta: async (key) => meta.get(key),
+    setMeta: async (key, value) => void meta.set(key, value),
+  };
+}
