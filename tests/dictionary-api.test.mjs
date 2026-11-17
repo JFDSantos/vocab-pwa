@@ -50,7 +50,7 @@ test('addWord does not duplicate a word from the main list', async () => {
   const db = openMemoryDb();
   await db.syncWords([{ id: 'run', rank: 1, word: 'run', pos: 'verb', definition: 'To move fast.' }], NOW);
   const r = await addWord(db, 'Run', NOW, failingFetch);
-  assert.deepEqual(r, { ok: true, existing: true });
+  assert.deepEqual(r, { ok: true, existing: true, id: 'run' });
   assert.equal((await db.getAllCards()).length, 1);
 });
 

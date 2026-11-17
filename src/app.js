@@ -14,7 +14,7 @@ const $screen = document.getElementById('screen');
 const $counts = document.getElementById('counts');
 const $notice = document.getElementById('notice');
 
-const state = { db: null, cards: [], newLimit: 10, today: { day: '', done: 0, extra: 0 } };
+const state = { db: null, cards: [], newLimit: 10, today: { day: '', done: 0, extra: 0 }, focusId: null, view: 'study', showingDone: false };
 
 function notice(text) {
   $notice.textContent = text;
@@ -45,6 +45,7 @@ function showError(message) {
 }
 
 function showDone() {
+  state.showingDone = true;
   $counts.textContent = '';
   $screen.innerHTML = `<div class="empty"><h2>Tudo certo por hoje 🎉</h2><p>Volte mais tarde para revisar, ou estude mais palavras novas agora.</p><button class="primary" id="more">Estudar mais</button></div>`;
   document.getElementById('more').onclick = async () => {
@@ -55,9 +56,12 @@ function showDone() {
 }
 
 function showNext() {
+  state.showingDone = false;
   const queue = currentQueue();
-  if (queue.length === 0) return showDone();
-  const card = queue[0];
+  const focus = state.focusId && state.cards.find((c) => c.id === state.focusId);
+  state.focusId = null;
+  if (queue.length === 0 && !focus) return showDone();
+  const card = focus || queue[0];
   $counts.textContent = `${queue.length} na fila`;
   const { frontHtml, backHtml } = renderCard(card);
   $screen.innerHTML = `
@@ -98,12 +102,17 @@ function showNext() {
 }
 
 function showView(view) {
+  state.view = view;
   document.querySelectorAll('#nav [data-view]').forEach((b) => b.classList.toggle('on', b.dataset.view === view));
   if (view === 'add') {
     $counts.textContent = '';
     renderAddWord($screen, async (word) => {
       const result = await addWord(state.db, word, Date.now());
       if (result.ok) state.cards = await state.db.getAllCards();
+      if (result.ok && result.existing) {
+        state.focusId = result.id;
+        showView('study');
+      }
       return result;
     });
   } else if (view === 'settings') {
@@ -126,6 +135,19 @@ function showView(view) {
 document.getElementById('nav').addEventListener('click', (e) => {
   const view = e.target.dataset.view;
   if (view) showView(view);
+});
+
+async function resume() {
+  const previousDay = state.today.day;
+  await loadToday();
+  if (state.view === 'study' && (state.today.day !== previousDay || state.showingDone)) showNext();
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && state.db) resume();
+});
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted && state.db) resume();
 });
 
 async function init() {

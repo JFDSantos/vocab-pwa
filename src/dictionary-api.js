@@ -35,11 +35,11 @@ export async function lookupWord(input, fetchImpl = globalThis.fetch) {
 
 export async function addWord(db, input, now, fetchImpl = globalThis.fetch) {
   const word = String(input).trim().toLowerCase();
-  const cards = await db.getAllCards();
-  if (cards.some((c) => c.word === word)) return { ok: true, existing: true };
+  const found = (await db.getAllCards()).find((c) => c.word === word);
+  if (found) return { ok: true, existing: true, id: found.id };
 
-  const found = await lookupWord(word, fetchImpl);
-  if (!found.ok) return found;
-  await db.putCard({ ...found.record, ...newCardState(now), userAdded: true });
+  const looked = await lookupWord(word, fetchImpl);
+  if (!looked.ok) return looked;
+  await db.putCard({ ...looked.record, ...newCardState(now), userAdded: true });
   return { ok: true, existing: false };
 }
