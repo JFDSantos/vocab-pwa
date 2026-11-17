@@ -11,7 +11,29 @@ export async function exportBackup(db) {
   return JSON.stringify({ version: VERSION, exportedAt: Date.now(), cards: await db.getAllCards(), meta });
 }
 
-const isCard = (c) => c && typeof c === 'object' && typeof c.id === 'string' && typeof c.state === 'string' && typeof c.due === 'number';
+const STATES = ['new', 'learning', 'review'];
+const isStr = (v) => typeof v === 'string' && v.length > 0;
+const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
+const optStr = (v) => v === undefined || typeof v === 'string';
+
+const isCard = (c) =>
+  c && typeof c === 'object' &&
+  isStr(c.id) && isStr(c.word) && isStr(c.pos) && isStr(c.definition) &&
+  STATES.includes(c.state) &&
+  [c.ease, c.interval, c.due, c.reps, c.lapses].every(isNum) &&
+  optStr(c.ipa) && optStr(c.example) && optStr(c.pt);
+
+const META_VALIDATORS = {
+  newLimit: (v) => Number.isInteger(v) && v >= 1 && v <= 50,
+  today: (v) => v && typeof v === 'object' && isStr(v.day) && isNum(v.done) && isNum(v.extra),
+  lastBackupAt: isNum,
+};
+
+function validMeta(meta) {
+  if (meta === undefined) return true;
+  if (!meta || typeof meta !== 'object' || Array.isArray(meta)) return false;
+  return Object.entries(meta).every(([k, v]) => !(k in META_VALIDATORS) || META_VALIDATORS[k](v));
+}
 
 export async function importBackup(db, json) {
   let data;
@@ -22,12 +44,11 @@ export async function importBackup(db, json) {
   }
   if (!data || typeof data !== 'object' || Array.isArray(data)) return { ok: false, reason: 'invalid' };
   if (data.version !== VERSION) return { ok: false, reason: typeof data.version === 'number' ? 'version' : 'invalid' };
-  if (!Array.isArray(data.cards) || !data.cards.every(isCard)) return { ok: false, reason: 'invalid' };
+  if (!Array.isArray(data.cards) || !data.cards.every(isCard) || !validMeta(data.meta)) return { ok: false, reason: 'invalid' };
 
-  for (const card of data.cards) await db.putCard(card);
-  for (const key of META_KEYS) {
-    if (data.meta && data.meta[key] !== undefined) await db.setMeta(key, data.meta[key]);
-  }
+  const meta = {};
+  for (const key of META_KEYS) if (data.meta?.[key] !== undefined) meta[key] = data.meta[key];
+  await db.importAll(data.cards, meta);
   return { ok: true };
 }
 

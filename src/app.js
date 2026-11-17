@@ -141,7 +141,7 @@ async function init() {
     state.db = openMemoryDb();
     notice('Seu navegador não permite salvar o progresso. Você pode estudar, mas ele será perdido ao fechar.');
   }
-  await state.db.seedIfEmpty(words, Date.now());
+  await state.db.syncWords(words, Date.now());
   state.cards = await state.db.getAllCards();
   await loadToday();
   requestPersistence();

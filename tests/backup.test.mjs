@@ -12,7 +12,7 @@ const words = [
 
 async function seeded() {
   const db = openMemoryDb();
-  await db.seedIfEmpty(words, NOW);
+  await db.syncWords(words, NOW);
   return db;
 }
 
@@ -67,4 +67,40 @@ test('requestPersistence returns the browser answer when available', async () =>
   } finally {
     Object.defineProperty(globalThis, 'navigator', saved);
   }
+});
+
+const goodCard = { id: 'run', rank: 1, word: 'run', pos: 'verb', definition: 'To move fast.', state: 'review', ease: 2.5, interval: 3, due: NOW, reps: 2, lapses: 0 };
+const bundle = (cards, meta) => JSON.stringify({ version: 1, cards, meta });
+
+test('rejects cards that have the right shape but miss fields the app relies on', async () => {
+  const db = await seeded();
+  const before = await db.getAllCards();
+  for (const bad of [
+    { id: 'run', state: 'review', due: 0 },
+    { ...goodCard, definition: undefined },
+    { ...goodCard, interval: 'x' },
+    { ...goodCard, reps: NaN },
+    { ...goodCard, state: 'weird' },
+    { ...goodCard, ipa: 5 },
+  ]) {
+    assert.deepEqual(await importBackup(db, bundle([bad], {})), { ok: false, reason: 'invalid' });
+  }
+  assert.deepEqual(await db.getAllCards(), before);
+});
+
+test('rejects meta values of the wrong type', async () => {
+  const db = await seeded();
+  const before = await db.getAllCards();
+  for (const meta of [{ newLimit: 'abc' }, { newLimit: 99 }, { today: { day: 5 } }, { lastBackupAt: 'yesterday' }, 'oops']) {
+    assert.deepEqual(await importBackup(db, bundle([goodCard], meta)), { ok: false, reason: 'invalid' });
+  }
+  assert.equal(await db.getMeta('newLimit'), undefined);
+  assert.deepEqual(await db.getAllCards(), before);
+});
+
+test('accepts a complete backup, including meta', async () => {
+  const db = await seeded();
+  const meta = { newLimit: 12, today: { day: '2026-11-17', done: 3, extra: 0 }, lastBackupAt: NOW };
+  assert.deepEqual(await importBackup(db, bundle([goodCard], meta)), { ok: true });
+  assert.deepEqual(await db.getMeta('today'), meta.today);
 });

@@ -48,7 +48,7 @@ test('input that is not a single word returns not-found without calling fetch', 
 
 test('addWord does not duplicate a word from the main list', async () => {
   const db = openMemoryDb();
-  await db.seedIfEmpty([{ id: 'run', rank: 1, word: 'run', pos: 'verb', definition: 'To move fast.' }], NOW);
+  await db.syncWords([{ id: 'run', rank: 1, word: 'run', pos: 'verb', definition: 'To move fast.' }], NOW);
   const r = await addWord(db, 'Run', NOW, failingFetch);
   assert.deepEqual(r, { ok: true, existing: true });
   assert.equal((await db.getAllCards()).length, 1);
