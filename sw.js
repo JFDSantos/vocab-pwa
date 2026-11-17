@@ -1,5 +1,26 @@
 const CACHE = 'vocab-v1';
-const CORE = ['./', './index.html', './styles.css', './manifest.webmanifest', './data/words.json', './src/app.js', './icons/icon-192.png'];
+const CORE = [
+  './',
+  './index.html',
+  './styles.css',
+  './manifest.webmanifest',
+  './data/words.json',
+  './src/app.js',
+  './src/backup.js',
+  './src/db.js',
+  './src/dictionary-api.js',
+  './src/queue.js',
+  './src/scheduler.js',
+  './src/settings.js',
+  './src/speech.js',
+  './src/ui/about.js',
+  './src/ui/add-word.js',
+  './src/ui/settings.js',
+  './src/ui/study.js',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
+  './icons/apple-touch-icon.png',
+];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(CORE)).then(() => self.skipWaiting()));

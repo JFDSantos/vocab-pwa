@@ -54,3 +54,5 @@ input[type="text"] { font: inherit; padding: 14px; border-radius: 12px; border: 
 a { color: var(--accent); }
 input[type="number"] { font: inherit; padding: 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); width: 90px; display: block; margin-top: 6px; }
 main section.card { flex: 0 0 auto; text-align: left; }
+
+[hidden] { display: none !important; }

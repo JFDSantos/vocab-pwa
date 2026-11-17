@@ -1,27 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import http from 'node:http';
-import { readFileSync, existsSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import { extname, join, normalize } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.png': 'image/png' };
-
-let chromium = null;
-try { ({ chromium } = createRequire(import.meta.url)('playwright')); } catch { /* playwright not installed */ }
-
-function serve() {
-  const server = http.createServer((req, res) => {
-    const path = normalize(decodeURIComponent(new URL(req.url, 'http://x').pathname));
-    const file = join(ROOT, path.endsWith('/') ? `${path}index.html` : path);
-    if (!file.startsWith(ROOT) || !existsSync(file)) { res.writeHead(404); return res.end(); }
-    res.writeHead(200, { 'content-type': MIME[extname(file)] ?? 'application/octet-stream' });
-    res.end(readFileSync(file));
-  });
-  return new Promise((resolve) => server.listen(0, () => resolve({ server, url: `http://localhost:${server.address().port}/` })));
-}
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { ROOT, chromium, serve } from './helpers.mjs';
 
 test('manifest has relative start_url and scope "./"', () => {
   const m = JSON.parse(readFileSync(join(ROOT, 'manifest.webmanifest'), 'utf8'));
@@ -49,7 +30,6 @@ test('after first load, going offline still renders the study screen', { skip: !
     await page.goto(url);
     await page.waitForSelector('#reveal');
     await page.evaluate(() => navigator.serviceWorker.ready);
-    await page.reload();
     await page.waitForFunction(() => navigator.serviceWorker.controller);
     await ctx.setOffline(true);
     await page.reload();
@@ -78,4 +58,11 @@ test('dictionary API requests are not cached', { skip: !chromium && 'playwright 
     await browser.close();
     server.close();
   }
+});
+
+test('service worker precaches every file under src/ and the apple-touch-icon', () => {
+  const sw = readFileSync(join(ROOT, 'sw.js'), 'utf8');
+  const walk = (dir) => readdirSync(join(ROOT, dir), { withFileTypes: true })
+    .flatMap((e) => (e.isDirectory() ? walk(`${dir}/${e.name}`) : [`${dir}/${e.name}`]));
+  for (const f of [...walk('src'), 'icons/apple-touch-icon.png']) assert.ok(sw.includes(`'./${f}'`), `${f} missing from CORE`);
 });
