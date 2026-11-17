@@ -6,6 +6,8 @@ import { speak, canSpeak } from './speech.js';
 import { addWord } from './dictionary-api.js';
 import { renderAddWord } from './ui/add-word.js';
 import { renderSettings } from './ui/settings.js';
+import { renderAbout } from './ui/about.js';
+import { getNewLimit } from './settings.js';
 import { backupDue, requestPersistence } from './backup.js';
 
 const $screen = document.getElementById('screen');
@@ -31,7 +33,7 @@ async function loadToday() {
   const day = studyDay(Date.now());
   const saved = await state.db.getMeta('today');
   state.today = saved && saved.day === day ? saved : { day, done: 0, extra: 0 };
-  state.newLimit = (await state.db.getMeta('newLimit')) ?? 10;
+  state.newLimit = await getNewLimit(state.db);
 }
 
 const currentQueue = () =>
@@ -108,9 +110,14 @@ function showView(view) {
     $counts.textContent = '';
     renderSettings($screen, {
       db: state.db,
+      getCards: () => state.cards,
+      onLimitChange: (limit) => { state.newLimit = limit; },
       onBackedUp: () => notice(''),
       onImported: async () => { state.cards = await state.db.getAllCards(); await loadToday(); },
     });
+  } else if (view === 'about') {
+    $counts.textContent = '';
+    renderAbout($screen);
   } else {
     showNext();
   }

@@ -49,3 +49,8 @@ button.link { background: transparent; border: 0; color: var(--accent); padding:
 .add h2 { margin: 0; }
 input[type="text"] { font: inherit; padding: 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); }
 .del { align-self: center; color: var(--again); font-size: 14px; background: transparent; border: 0; min-height: 0; }
+
+.report { text-align: left; white-space: pre-wrap; font-size: 13px; margin: 0; max-height: 160px; overflow: auto; }
+a { color: var(--accent); }
+input[type="number"] { font: inherit; padding: 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); width: 90px; display: block; margin-top: 6px; }
+main section.card { flex: 0 0 auto; text-align: left; }
