@@ -5,6 +5,8 @@ import { renderCard } from './ui/study.js';
 import { speak, canSpeak } from './speech.js';
 import { addWord } from './dictionary-api.js';
 import { renderAddWord } from './ui/add-word.js';
+import { renderSettings } from './ui/settings.js';
+import { backupDue, requestPersistence } from './backup.js';
 
 const $screen = document.getElementById('screen');
 const $counts = document.getElementById('counts');
@@ -102,6 +104,13 @@ function showView(view) {
       if (result.ok) state.cards = await state.db.getAllCards();
       return result;
     });
+  } else if (view === 'settings') {
+    $counts.textContent = '';
+    renderSettings($screen, {
+      db: state.db,
+      onBackedUp: () => notice(''),
+      onImported: async () => { state.cards = await state.db.getAllCards(); await loadToday(); },
+    });
   } else {
     showNext();
   }
@@ -128,6 +137,10 @@ async function init() {
   await state.db.seedIfEmpty(words, Date.now());
   state.cards = await state.db.getAllCards();
   await loadToday();
+  requestPersistence();
+  if (!$notice.textContent && backupDue(await state.db.getMeta('lastBackupAt'), Date.now())) {
+    notice('Faça um backup do seu progresso em Config → Exportar progresso.');
+  }
   showNext();
 }
 
