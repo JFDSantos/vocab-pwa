@@ -3,6 +3,8 @@ import { buildQueue, studyDay } from './queue.js';
 import { schedule } from './scheduler.js';
 import { renderCard } from './ui/study.js';
 import { speak, canSpeak } from './speech.js';
+import { addWord } from './dictionary-api.js';
+import { renderAddWord } from './ui/add-word.js';
 
 const $screen = document.getElementById('screen');
 const $counts = document.getElementById('counts');
@@ -61,10 +63,18 @@ function showNext() {
       <button data-grade="again">Errei</button><button data-grade="hard">Difícil</button>
       <button data-grade="good">Bom</button><button data-grade="easy">Fácil</button>
     </div>
-    <button class="flag" id="flag">Reportar card ruim</button>`;
+    <button class="flag" id="flag">Reportar card ruim</button>
+    ${card.userAdded ? '<button class="del" id="del">Apagar esta palavra</button>' : ''}`;
   const $ = (id) => document.getElementById(id);
   $('reveal').onclick = () => { $('back').hidden = false; $('grades').hidden = false; $('reveal').hidden = true; };
   $('flag').onclick = async () => { card.flagged = true; await state.db.putCard(card); $('flag').textContent = 'Marcado ✓'; };
+  if (card.userAdded) {
+    $('del').onclick = async () => {
+      await state.db.deleteCard(card.id);
+      state.cards = state.cards.filter((c) => c.id !== card.id);
+      showNext();
+    };
+  }
   $('card').onclick = (e) => {
     const action = e.target.closest('[data-action]');
     if (!action) return;
@@ -82,6 +92,25 @@ function showNext() {
     showNext();
   };
 }
+
+function showView(view) {
+  document.querySelectorAll('#nav [data-view]').forEach((b) => b.classList.toggle('on', b.dataset.view === view));
+  if (view === 'add') {
+    $counts.textContent = '';
+    renderAddWord($screen, async (word) => {
+      const result = await addWord(state.db, word, Date.now());
+      if (result.ok) state.cards = await state.db.getAllCards();
+      return result;
+    });
+  } else {
+    showNext();
+  }
+}
+
+document.getElementById('nav').addEventListener('click', (e) => {
+  const view = e.target.dataset.view;
+  if (view) showView(view);
+});
 
 async function init() {
   let words;
