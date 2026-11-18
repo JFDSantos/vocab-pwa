@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Vocabulário</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Vocabulário">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#2f5fd0">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="top">
+    <h1>Vocabulário</h1>
+    <div id="counts" class="counts"></div>
+  </header>
+  <div id="notice" class="notice" hidden></div>
+  <nav id="nav" class="nav"><button data-view="study" class="on">Estudar</button><button data-view="add">Adicionar</button><button data-view="settings">Config</button><button data-view="about">Sobre</button></nav>
+  <main id="screen"></main>
+  <script type="module" src="./src/app.js"></script>
+</body>
+</html>

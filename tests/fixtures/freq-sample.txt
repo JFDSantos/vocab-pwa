@@ -1,0 +1,12 @@
+the 100
+run 90
+was 80
+London 70
+table 60
+inconceivable 50
+water 40
+xyzzy 30
+apple 20
+run 10
+it's 5
+banana 1
